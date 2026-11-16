@@ -1,0 +1,93 @@
+
+import os
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    CallbackQueryHandler,
+    ContextTypes,
+)
+
+SITE = "https://smartopalennya.com.ua/"
+PHONE1 = "+380996817808"
+PHONE2 = "+380969503435"
+
+def main_menu():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("⚡ Електроопалення", callback_data="heating")],
+        [InlineKeyboardButton("☀️ Сонячні електростанції", callback_data="solar")],
+        [InlineKeyboardButton("♨️ Тепла підлога", callback_data="floor")],
+        [InlineKeyboardButton("🏠 Про компанію", callback_data="about")],
+        [InlineKeyboardButton("📞 Контакти", callback_data="contacts")],
+        [InlineKeyboardButton("🌐 Наш сайт", url=SITE)],
+    ])
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "🏠 <b>СМАРТ ОПАЛЕННЯ</b>\n\n"
+        "Сучасні рішення для комфорту та енергоефективності вашого дому.\n\n"
+        "Оберіть потрібний розділ:",
+        reply_markup=main_menu(),
+        parse_mode="HTML"
+    )
+
+async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    pages = {
+        "heating": (
+            "⚡ <b>Електроопалення</b>\n\n"
+            "Сучасні рішення для опалення житлових та інших приміщень."
+        ),
+        "solar": (
+            "☀️ <b>Сонячні електростанції</b>\n\n"
+            "Системи використання сонячної енергії для вашого будинку."
+        ),
+        "floor": (
+            "♨️ <b>Тепла підлога</b>\n\n"
+            "Комфортне рішення для обігріву приміщень."
+        ),
+        "about": (
+            "🏠 <b>Про компанію</b>\n\n"
+            "СМАРТ ОПАЛЕННЯ — рішення у сфері сучасного опалення "
+            "та сонячної енергетики."
+        ),
+        "contacts": (
+            "📞 <b>Зв'яжіться з нами</b>\n\n"
+            f"☎️ <a href='tel:{PHONE1}'>{PHONE1}</a>\n"
+            f"☎️ <a href='tel:{PHONE2}'>{PHONE2}</a>\n\n"
+            "🌐 <a href='{SITE}'>Наш сайт</a>"
+        ).replace("{SITE}", SITE),
+    }
+
+    text = pages.get(query.data, "Оберіть розділ меню.")
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("⬅️ Головне меню", callback_data="home")],
+        [InlineKeyboardButton("🌐 Наш сайт", url=SITE)],
+    ])
+
+    if query.data == "home":
+        await query.edit_message_text(
+            "Оберіть потрібний розділ:",
+            reply_markup=main_menu()
+        )
+    else:
+        await query.edit_message_text(
+            text,
+            reply_markup=keyboard,
+            parse_mode="HTML"
+        )
+
+def main():
+    token = os.environ["BOT_TOKEN"]
+    app = Application.builder().token(token).build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(buttons))
+
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()
